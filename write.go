@@ -57,8 +57,11 @@ const namespaceMWS = "http://search.mathweb.org/ns"
 
 // WriteTo writes this harvest into writer and returns (0, error)
 func (harvest Harvest) WriteTo(writer io.Writer) (n int64, err error) {
+	if _, err = io.WriteString(writer, string(xml.Header)); err != nil {
+		return
+	}
+
 	encoder := xml.NewEncoder(writer)
-	encoder.Indent("", "  ")
 
 	// TODO: count number of bytes
 	err = encoder.Encode(harvest)
