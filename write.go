@@ -1,9 +1,69 @@
 package ltxmlharvest
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"io"
+)
+
+// Harvest represents a single harvest.
+// It implements sort.Interface
+type Harvest []HarvestFragment
+
+func (harvest Harvest) Len() int {
+	return len(harvest)
+}
+
+func (harvest Harvest) Swap(i, j int) {
+	harvest[i], harvest[j] = harvest[j], harvest[i]
+}
+
+func (harvest Harvest) Less(i, j int) bool {
+	return harvest[i].URI < harvest[j].URI
+}
+
+// HarvestFragment represents a single document fragment within a harvest
+type HarvestFragment struct {
+	// ID is an internal, but unique, id of this harvest fragment
+	// typically just the running id of this fragment
+	ID string
+
+	// URI is the URI of the corresponding document
+	URI string
+
+	// XHTMLContent of this document, substiuting "math" + id for formulae
+	XHTMLContent string
+
+	// List of formulae within the harvest
+	Formulae []HarvestFormula
+}
+
+// HarvestFormula represents a single formula found within the harvest
+type HarvestFormula struct {
+	// ID of this formula
+	ID string
+
+	// Dual (Content + Presentation) MathML contained in this document
+	// Content and Presentation should be linked using "xref" attributes.
+	// May use "m" and "mws" namespaces.
+	DualMathML string
+
+	// Content MathML corresponding to the DualMathML above.
+	// Must use the "m" namespace.
+	ContentMathML string
+}
 
 const namespaceMathML = "http://www.w3.org/1998/Math/MathML"
 const namespaceMWS = "http://search.mathweb.org/ns"
+
+// WriteTo writes this harvest into writer and returns (0, error)
+func (harvest Harvest) WriteTo(writer io.Writer) (n int64, err error) {
+	encoder := xml.NewEncoder(writer)
+	encoder.Indent("", "  ")
+
+	// TODO: count number of bytes
+	err = encoder.Encode(harvest)
+	return
+}
 
 // MarshalXML marshals this harvest into xml form
 func (harvest Harvest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
